@@ -1,0 +1,49 @@
+metric,value,unit,label
+start_time,2026-11-11 18:01,,Test start (local time)
+duration_min,59.9,min,Recording length
+bag_size_gb,49.78,GB,Bag size on disk
+bag_files,12,,Bag files (5-minute splits)
+pts_hz,10.0,Hz,"Point cloud rate, whole test"
+pts_count,35969,,Point clouds received
+pts_expected,35968,,Point clouds expected at 10 Hz
+pts_period_std_ms,2.22,ms,Jitter of the 100 ms scan period (1 sigma)
+pts_gap_max_ms,115.6,ms,Longest time between two point clouds
+pts_gaps_over_150ms,0,,Point cloud gaps over 150 ms
+points_per_scan,86400,,Points per full scan (96 rings x 900 columns)
+valid_pct,85.84,%,"Points with a return, whole test"
+valid_pts,73832,,"Valid points per scan, mean"
+range_median_m,2.32,m,Median range of valid points
+range_max_m,54.0,m,Farthest return seen
+intensity_mean,16.0,,Mean intensity (0-255)
+latency_ms,102.2,ms,"Cloud stamp to arrival, mean (includes the 100 ms scan)"
+latency_p99_ms,107.2,ms,"Cloud stamp to arrival, 99th percentile"
+imu_hz,200.0,Hz,"IMU rate, whole test"
+imu_count,719368,,IMU messages received
+imu_expected,719364,,IMU messages expected at 200 Hz
+imu_gap_max_ms,215.0,ms,Longest IMU gap
+imu_gap_at_min,46.0,min,When the longest IMU gap happened (minutes into test)
+imu_gaps_over_20ms,1,,IMU gaps over 20 ms
+acc_norm_g,1.0089,g,Mean acceleration magnitude (unit is g)
+acc_std_x_mg,2.03,mg,Accelerometer noise X (1 sigma)
+acc_std_y_mg,1.33,mg,Accelerometer noise Y (1 sigma)
+acc_std_z_mg,2.46,mg,Accelerometer noise Z (1 sigma)
+gyro_bias_x_dps,0.013,deg/s,Gyro bias X at rest
+gyro_bias_y_dps,-0.486,deg/s,Gyro bias Y at rest
+gyro_bias_z_dps,0.405,deg/s,Gyro bias Z at rest
+gyro_std_x_dps,0.066,deg/s,Gyro noise X (1 sigma)
+gyro_std_y_dps,0.066,deg/s,Gyro noise Y (1 sigma)
+gyro_std_z_dps,0.393,deg/s,Gyro noise Z (1 sigma)
+temp_main_min,84.69,degC,"Main board temperature, min"
+temp_main_mean,84.95,degC,"Main board temperature, mean"
+temp_main_max,85.69,degC,"Main board temperature, max"
+temp_top_min,23.0,degC,"Top board temperature, min"
+temp_top_mean,23.01,degC,"Top board temperature, mean"
+temp_top_max,23.06,degC,"Top board temperature, max"
+temp_main_range,1.0,degC,Main board temperature swing over the test
+noise_mm,4.9,mm,"Range repeatability: median per-pixel range sigma, static points"
+short_scan_pct,10.0,%,Scans with 861 of 900 columns (one per second)
+short_scan_wedge_deg,36,deg,"Azimuth missing from each short scan (sampled, about 322-358 deg)"
+columns_lost_pct,0.44,%,Columns missing over the whole test
+blind_sector_deg,8.8,deg,"Sector with no returns in every scan (sampled, about 176-184 deg)"
+worst_ring,0,,Ring with the fewest returns
+worst_ring_valid_pct,43.8,%,Returns on that ring

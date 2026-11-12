@@ -1,0 +1,11 @@
+[0;36mduration 01:30:00, bag ~126 GB, free 295 GB[0m
+[0;32mdashboard: http://127.0.0.1:8090/[0m
+run files: /home/dogux/airy_test/live_runs/20261112_103515
+bag:       /home/dogux/airy_test/bags/airy2x_20261112_103515
+stop early: Ctrl+C, or  kill 62196
+  00:00:00 / 01:30:00  events: 0
+  00:05:00 / 01:30:00  events: 18
+  00:10:00 / 01:30:00  events: 40
+  00:15:00 / 01:30:00  events: 54
+  00:20:00 / 01:30:00  events: 54
+  00:25:00 / 01:30:00  events: 58

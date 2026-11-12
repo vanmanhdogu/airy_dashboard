@@ -1,0 +1,23 @@
+# Lidar list for run_live.sh (same format as multi_rslidar/config/lidars.yaml,
+# which can be used directly; extra keys there are ignored).
+#   name        used for topics /<name>/points and /<name>/imu, and on the dashboard
+#   ip          the lidar's own IP (web page)
+#   *_port      must match the lidar's web page, and differ between lidars
+#   imu_port    0 = lidar without IMU
+#   points_topic / imu_topic   optional, override the default topic names
+lidars:
+  - name: front_lidar
+    ip: 192.168.42.200
+    msop_port: 6699
+    difop_port: 7788
+    imu_port: 6688
+  - name: rear_lidar
+    ip: 192.168.42.201
+    msop_port: 6700
+    difop_port: 7789
+    imu_port: 6689
+
+# Used only by --mode standalone (copied into the generated rslidar_sdk config):
+driver_defaults:
+  lidar_type: RSAIRY
+  use_lidar_clock: false      # true only when the lidars are PTP-synced to the PC

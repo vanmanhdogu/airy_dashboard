@@ -1,0 +1,559 @@
+<meta name="dash-one-writer">
+<style>
+/* Layout: summary tiles, then one finding per section, charts in a 2-up grid that stacks at phone width */
+.ar { display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-variant-numeric: tabular-nums; }
+.ar-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+.ar-meta { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: var(--cds-gap-xs) 0 0; }
+.ar-take { font-size: var(--cds-font-size-body); line-height: 1.55; margin: var(--cds-gap-md) 0 0; max-width: 68ch; }
+.ar-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: var(--cds-gap-md); }
+.ar-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+.ar-lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); letter-spacing: .03em; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; gap: var(--cds-gap-xs); }
+.ar-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2rem; line-height: 1.1; margin-top: var(--cds-gap-sm); }
+.ar-unit { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin-left: 3px; font-family: var(--font-anthropic-sans); }
+.ar-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-xs); }
+.ar-pill { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.ar-pill.ok { color: var(--color-ok); } .ar-pill.warn { color: var(--color-warn); } .ar-pill.bad { color: var(--color-bad); }
+.ar-sec { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+.ar-sec h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+.ar-sec h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+.ar-note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); line-height: 1.5; margin: 0; max-width: 72ch; }
+.ar-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: var(--cds-gap-md); }
+.ar-chart { position: relative; min-height: 180px; }
+.ar-chart.tall { min-height: 340px; }
+.ar-chart svg { display: block; overflow: visible; }
+.ar-chart .tick text, .ar-chart .ar-axlbl { fill: var(--cds-text-secondary); font-size: 11px; font-family: var(--font-anthropic-sans); }
+.ar-chart .domain, .ar-chart .tick line { stroke: var(--cds-chart-axis); }
+.ar-chart .ar-gridl line { stroke: var(--cds-chart-grid); }
+.ar-chart .ar-gridl .domain { display: none; }
+.ar-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.45; white-space: nowrap; z-index: 3; color: var(--color-fg); }
+.ar-tip b { font-weight: var(--cds-font-weight-medium); }
+.ar-tip .mut { color: var(--cds-text-secondary); }
+.ar-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.ar-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ar-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.ar-find { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--cds-gap-md); }
+.ar-find p { margin: var(--cds-gap-xs) 0 0; line-height: 1.5; font-size: var(--cds-font-size-body); }
+.ar-find .ar-lbl { text-transform: none; letter-spacing: 0; font-size: var(--cds-font-size-body); color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.ar-tw { overflow-x: auto; }
+.ar-tbl { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
+.ar-tbl th, .ar-tbl td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+.ar-tbl th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
+.ar-tbl td.num, .ar-tbl th.num { text-align: right; }
+.ar-cloud { position: relative; min-height: 340px; cursor: grab; touch-action: none; border-radius: var(--cds-radius); }
+.ar-cloud:active { cursor: grabbing; }
+.ar-cloud canvas { display: block; width: 100%; }
+.ar-hint { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: var(--cds-text-secondary); pointer-events: none; }
+.ar details summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+.ar details ul { margin: var(--cds-gap-sm) 0 0; padding-left: 1.2em; line-height: 1.6; max-width: 76ch; }
+[data-dash-source-state=refreshing] { opacity: .5; }
+</style>
+
+<div class="ar">
+  <header class="ar-head" id="top">
+    <h1>Airy 1-Hour Soak Test</h1>
+    <p class="ar-meta">RoboSense Airy (96-ring) at 192.168.77.201 · ROS 2 Jazzy, rslidar_sdk · started <span data-draw="m" data-source="summary" data-field="value" data-where="metric=start_time">—</span> · <span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=duration_min">—</span> min · <span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=bag_size_gb">—</span> GB bag in <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=bag_files">—</span> files</p>
+    <p class="ar-take">The lidar delivered <b data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=pts_count">—</b> point clouds against <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=pts_expected">—</span> expected, at <b data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=pts_hz">—</b> Hz, and the IMU ran at <b data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=imu_hz">—</b> Hz. The main board stayed between <b data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=temp_main_min">—</b> and <b data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=temp_main_max">—</b> °C the whole hour. Two things need a look: one scan per second is missing a <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=short_scan_wedge_deg">—</span>° slice, and the IMU stalled once for <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=imu_gap_max_ms">—</span> ms.</p>
+  </header>
+
+  <section class="ar-tiles" id="tiles" aria-label="Headline figures">
+    <div class="ar-card" id="tile-pts">
+      <div class="ar-lbl">Point cloud rate <span class="ar-pill" data-draw="pill" data-check="pts_hz">—</span></div>
+      <div class="ar-big"><span data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=pts_hz">—</span><span class="ar-unit">Hz</span></div>
+      <div class="ar-sub">Jitter <span data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=pts_period_std_ms">—</span> ms · longest gap <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=pts_gap_max_ms">—</span> ms</div>
+    </div>
+    <div class="ar-card" id="tile-imu">
+      <div class="ar-lbl">IMU rate <span class="ar-pill" data-draw="pill" data-check="imu_hz">—</span></div>
+      <div class="ar-big"><span data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=imu_hz">—</span><span class="ar-unit">Hz</span></div>
+      <div class="ar-sub"><span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=imu_count">—</span> messages · longest gap <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=imu_gap_max_ms">—</span> ms</div>
+    </div>
+    <div class="ar-card" id="tile-tmain">
+      <div class="ar-lbl">Main board temp <span class="ar-pill" data-draw="pill" data-check="temp_main_range">—</span></div>
+      <div class="ar-big"><span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=temp_main_mean">—</span><span class="ar-unit">°C</span></div>
+      <div class="ar-sub">Range <span data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=temp_main_min">—</span> to <span data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=temp_main_max">—</span> °C</div>
+    </div>
+    <div class="ar-card" id="tile-ttop">
+      <div class="ar-lbl">Top board temp <span class="ar-pill" data-draw="pill" data-check="temp_top_max">—</span></div>
+      <div class="ar-big"><span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=temp_top_mean">—</span><span class="ar-unit">°C</span></div>
+      <div class="ar-sub">Range <span data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=temp_top_min">—</span> to <span data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=temp_top_max">—</span> °C</div>
+    </div>
+    <div class="ar-card" id="tile-valid">
+      <div class="ar-lbl">Points with a return</div>
+      <div class="ar-big"><span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=valid_pct">—</span><span class="ar-unit">%</span></div>
+      <div class="ar-sub"><span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=valid_pts">—</span> of <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=points_per_scan">—</span> per scan</div>
+    </div>
+    <div class="ar-card" id="tile-noise">
+      <div class="ar-lbl">Range repeatability</div>
+      <div class="ar-big"><span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=noise_mm">—</span><span class="ar-unit">mm σ</span></div>
+      <div class="ar-sub">Median over static points · latency <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=latency_ms">—</span> ms</div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="rate">
+    <h2>Rate held steady for the full hour</h2>
+    <p class="ar-note">Messages received per second, averaged per minute. The dashed line is the nominal rate (10 Hz scans, 200 Hz IMU).</p>
+    <div class="ar-grid2">
+      <div class="ar-card"><h3>Point cloud rate (Hz)</h3><div class="ar-chart" id="c-pts-hz" data-draw="c-pts-hz" data-source="timeline"></div></div>
+      <div class="ar-card"><h3>IMU rate (Hz)</h3><div class="ar-chart" id="c-imu-hz" data-draw="c-imu-hz" data-source="timeline"></div></div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="gaps">
+    <h2>Longest dropout in each minute</h2>
+    <p class="ar-note">The longest time between two consecutive messages in each minute. Bars past the dashed limit (150 ms for point clouds, 20 ms for IMU) are dropouts.</p>
+    <div class="ar-grid2">
+      <div class="ar-card"><h3>Point cloud gap (ms)</h3><div class="ar-chart" id="c-pts-gap" data-draw="c-pts-gap" data-source="timeline"></div></div>
+      <div class="ar-card"><h3>IMU gap (ms)</h3><div class="ar-chart" id="c-imu-gap" data-draw="c-imu-gap" data-source="timeline"></div></div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="temperature">
+    <h2>Temperature was flat after warm-up</h2>
+    <p class="ar-note">Internal temperatures read from the lidar's own packet header once per second, averaged per minute. The lidar was already warm from earlier use when the test started, so there is no warm-up curve here.</p>
+    <div class="ar-grid2">
+      <div class="ar-card"><h3>Main board (°C)</h3><div class="ar-chart" id="c-temp-main" data-draw="c-temp-main" data-source="timeline"></div></div>
+      <div class="ar-card"><h3>Top board (°C)</h3><div class="ar-chart" id="c-temp-top" data-draw="c-temp-top" data-source="timeline"></div></div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="quality">
+    <h2>Point quality</h2>
+    <p class="ar-note">Share of the 86,400 points per scan that got a return, and the median distance of those returns. Both stay level, so the scene and the sensor did not change during the test.</p>
+    <div class="ar-grid2">
+      <div class="ar-card"><h3>Points with a return (%)</h3><div class="ar-chart" id="c-valid" data-draw="c-valid" data-source="timeline"></div></div>
+      <div class="ar-card"><h3>Median range (m)</h3><div class="ar-chart" id="c-range" data-draw="c-range" data-source="timeline"></div></div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="imu">
+    <h2>IMU at rest</h2>
+    <p class="ar-note">Gyro output per minute with the lidar standing still, so the values are the gyro's bias. Acceleration is reported in g: its magnitude was <span data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=acc_norm_g">—</span> g.</p>
+    <div class="ar-grid2">
+      <div class="ar-card">
+        <h3>Gyro bias (°/s)</h3>
+        <div class="ar-legend" data-draw="gyro-legend"></div>
+        <div class="ar-chart" id="c-gyro" data-draw="c-gyro" data-source="timeline"></div>
+      </div>
+      <div class="ar-card">
+        <h3>IMU noise and bias, whole test</h3>
+        <div class="ar-tw">
+          <table class="ar-tbl" id="t-imu">
+            <thead><tr><th>Axis</th><th class="num">Gyro bias °/s</th><th class="num">Gyro noise °/s</th><th class="num">Accel noise mg</th></tr></thead>
+            <tbody>
+              <tr><td>X</td><td class="num" data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=gyro_bias_x_dps">—</td><td class="num" data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=gyro_std_x_dps">—</td><td class="num" data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=acc_std_x_mg">—</td></tr>
+              <tr><td>Y</td><td class="num" data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=gyro_bias_y_dps">—</td><td class="num" data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=gyro_std_y_dps">—</td><td class="num" data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=acc_std_y_mg">—</td></tr>
+              <tr><td>Z</td><td class="num" data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=gyro_bias_z_dps">—</td><td class="num" data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=gyro_std_z_dps">—</td><td class="num" data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=acc_std_z_mg">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="ar-note" style="margin-top:var(--cds-gap-sm)">The Z gyro is about six times noisier than X and Y. Subtract the bias before using the gyro for odometry.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="findings">
+    <h2>Findings</h2>
+    <div class="ar-find">
+      <div class="ar-card" id="f-wedge">
+        <div class="ar-lbl">One short scan every second <span class="ar-pill warn">Check</span></div>
+        <p><span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=short_scan_pct">—</span>% of scans have 861 of 900 columns. Each one is missing about <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=short_scan_wedge_deg">—</span>° of azimuth, near 322–358°. Over the hour <span data-draw="m" data-fmt="2" data-source="summary" data-field="value" data-where="metric=columns_lost_pct">—</span>% of columns were lost. It repeats exactly once per second, so it is periodic, not random packet loss. Record with <code>--packets</code> to tell whether the lidar or the driver drops it.</p>
+      </div>
+      <div class="ar-card" id="f-imugap">
+        <div class="ar-lbl">One IMU stall <span class="ar-pill warn">Check</span></div>
+        <p>The IMU went silent for <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=imu_gap_max_ms">—</span> ms once, at minute <span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=imu_gap_at_min">—</span>. It was the only gap over 20 ms in <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=imu_count">—</span> messages. Point clouds kept flowing then, so it was not a network outage.</p>
+      </div>
+      <div class="ar-card" id="f-blind">
+        <div class="ar-lbl">Fixed blind sector <span class="ar-pill">Expected</span></div>
+        <p>Every scan has a <span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=blind_sector_deg">—</span>° slice with no returns, around 176–184° azimuth. It does not move, so it is most likely the stand or cable behind the lidar.</p>
+      </div>
+      <div class="ar-card" id="f-units">
+        <div class="ar-lbl">IMU acceleration is in g <span class="ar-pill">Note</span></div>
+        <p>The driver publishes acceleration in g, not the m/s² that ROS expects. At rest it reads <span data-draw="m" data-fmt="3" data-source="summary" data-field="value" data-where="metric=acc_norm_g">—</span> g. Multiply by 9.81 before feeding it to a filter or SLAM.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="scans">
+    <h2>Scan sizes and channel health</h2>
+    <div class="ar-grid2">
+      <div class="ar-card">
+        <h3>Columns per scan</h3>
+        <div class="ar-tw">
+          <table class="ar-tbl" id="t-scans" data-source="scan_sizes" data-row-key="columns">
+            <thead><tr><th data-field="columns">Columns</th><th class="num" data-field="scans">Scans</th><th class="num" data-field="share_pct">Share %</th></tr></thead>
+            <tbody data-draw="t-scans"></tbody>
+          </table>
+        </div>
+        <p class="ar-note" style="margin-top:var(--cds-gap-sm)">A full revolution is 900 columns (0.4° each).</p>
+        <h3 style="margin-top:var(--cds-gap-md)">Range repeatability by distance</h3>
+        <div class="ar-tw">
+          <table class="ar-tbl" id="t-noise" data-source="noise_bands" data-row-key="band">
+            <thead><tr><th data-field="band">Distance</th><th class="num" data-field="pixels">Pixels</th><th class="num" data-field="sigma_mm_median">Median σ mm</th></tr></thead>
+            <tbody data-draw="t-noise"></tbody>
+          </table>
+        </div>
+        <p class="ar-note" style="margin-top:var(--cds-gap-sm)">σ is how much one pixel's range varies over time. The 2–5 m band holds most surfaces and is the fair figure. The 1–2 m and far bands mix in object edges and things seen through gaps, which inflate σ.</p>
+      </div>
+      <div class="ar-card">
+        <h3>Returns per ring (%)</h3>
+        <div class="ar-chart" id="c-rings" data-draw="c-rings" data-source="rings"></div>
+        <p class="ar-note">All 96 rings return points. The lowest is ring <span data-draw="m" data-fmt="0" data-source="summary" data-field="value" data-where="metric=worst_ring">—</span> at <span data-draw="m" data-fmt="1" data-source="summary" data-field="value" data-where="metric=worst_ring_valid_pct">—</span>%. The low rings look out past the room, where there is nothing close enough to return, so this is the scene, not a dead channel.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="cloud">
+    <h2>One scan in 3D</h2>
+    <p class="ar-note">9,000 points sampled from the first scan of the test, colored by height. Drag to rotate.</p>
+    <div class="ar-card">
+      <div class="ar-cloud" id="c-cloud" data-draw="c-cloud" data-source="frame" role="img" aria-label="3D point cloud of one Airy scan, colored by height"></div>
+    </div>
+  </section>
+
+  <section class="ar-sec" id="specs">
+    <h2>All measured values</h2>
+    <div class="ar-card ar-tw">
+      <table class="ar-tbl" id="t-specs" data-source="summary" data-row-key="metric">
+        <thead><tr><th data-field="label">Measurement</th><th class="num" data-field="value">Value</th><th data-field="unit">Unit</th></tr></thead>
+        <tbody data-draw="t-specs"></tbody>
+      </table>
+    </div>
+    <details id="method">
+      <summary>How these were measured</summary>
+      <ul>
+        <li>Recorded with <code>ros2 bag record</code>: /rslidar_points, /rslidar_imu_data and the two temperature topics. The lidar did not move during the test; the IMU shows no motion.</li>
+        <li>Pass marks used for the status labels: point clouds within 0.05 Hz of 10 Hz, IMU within 1 Hz of 200 Hz, main board swing under 2 °C, top board under 60 °C. Dropout limits on the gap charts: 150 ms for point clouds, 20 ms for IMU.</li>
+        <li>Rates and gaps use the time each message reached the recorder. Latency is arrival time minus the cloud's stamp, which marks the first point, so it includes the 100 ms a scan takes.</li>
+        <li>Temperatures come from bytes 38–41 of each point-data packet header, decoded the same way as RoboSense's rs_driver (0.0625 °C steps). The main board runs far hotter than the air, so compare it with the lidar's web page rather than with room temperature.</li>
+        <li>Range repeatability compares every 10th full scan pixel by pixel and keeps only pixels that returned in at least 95% of them.</li>
+        <li>The short-scan slice and the blind sector were measured on a sample of 40 scans. The share of short scans counts all 35,969.</li>
+      </ul>
+    </details>
+  </section>
+</div>
+
+<script>
+/* Shared helpers on window: formatting, summary lookup, chart builders. */
+(() => {
+  const LIMITS = {               // fixed acceptance limits chosen for this test
+    pts_hz: { nom: 10, tol: 0.05 },
+    imu_hz: { nom: 200, tol: 1 },
+    temp_main_range: { max: 2, ok: 'Stable' },
+    temp_top_max: { max: 60, ok: 'Normal' },
+    pts_gap_limit: 150,
+    imu_gap_limit: 20,
+  };
+  const summaryRow = (metric) => {
+    const s = dash.data('summary');
+    if (s.status !== 'ok') return null;
+    return s.data.find((r) => r.metric === metric) || null;
+  };
+  const rowsOf = (id) => {
+    const s = dash.data(id);
+    return s.status === 'ok' ? s.data : null;
+  };
+  const fmtNum = (v, dg) => d3.format(`,.${dg}f`)(v);
+
+  // Tooltip inside a chart box
+  const tip = (box) => {
+    let t = box.querySelector('.ar-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'ar-tip'; t.hidden = true; box.appendChild(t); }
+    return {
+      show(lines, x, y) {
+        t.replaceChildren(...lines.map(([k, v, c]) => {
+          const d = document.createElement('div');
+          if (c) { const sw = document.createElement('span'); sw.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:${c}`; d.appendChild(sw); }
+          const a = document.createElement('span'); a.className = 'mut'; a.textContent = k + ' ';
+          const b = document.createElement('b'); b.textContent = v;
+          d.append(a, b); return d;
+        }));
+        t.hidden = false;
+        const W = box.clientWidth, tw = t.offsetWidth;
+        t.style.left = Math.max(0, Math.min(W - tw, x + 12)) + 'px';
+        t.style.top = Math.max(0, y - 10) + 'px';
+      },
+      hide() { t.hidden = true; },
+    };
+  };
+
+  const measure = (svg, labels) => {
+    const g = svg.append('g').attr('class', 'tick');
+    let w = 0;
+    labels.forEach((l) => { const tx = g.append('text').text(l); w = Math.max(w, tx.node().getComputedTextLength()); });
+    g.remove();
+    return w || 7 * Math.max(...labels.map((l) => String(l).length));
+  };
+
+  const frame = (el, height, label) => {
+    el.replaceChildren();
+    const W = Math.max(240, el.clientWidth || 300);
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', height)
+      .attr('viewBox', `0 0 ${W} ${height}`).attr('role', 'img').attr('aria-label', label);
+    return { svg, W, H: height };
+  };
+
+  const failed = (el, s) => {
+    el.replaceChildren();
+    const p = document.createElement('p'); p.className = 'ar-note';
+    p.textContent = s && s.status === 'error' ? 'Failed to load' : '—';
+    el.appendChild(p);
+  };
+
+  // Line chart over minutes
+  function lineChart(el, o) {
+    const rows = rowsOf(o.source || 'timeline');
+    if (!rows) { failed(el, dash.data(o.source || 'timeline')); return; }
+    const data = rows.map((r) => ({ x: +r[o.x || 'minute'], ...Object.fromEntries(o.series.map((s) => [s.f, +r[s.f]])) }));
+    const { svg, W, H } = frame(el, o.height || 180, o.label);
+    const all = data.flatMap((d) => o.series.map((s) => d[s.f])).filter(Number.isFinite);
+    let dom = o.yDomain ? o.yDomain.slice() : d3.extent(all);
+    if (o.yDomain) { dom[0] = Math.min(dom[0], d3.min(all)); dom[1] = Math.max(dom[1], d3.max(all)); }
+    if (o.pad) { dom = [dom[0] - o.pad, dom[1] + o.pad]; }
+    const y = d3.scaleLinear().domain(dom).nice(4);
+    const yt = y.ticks(4);
+    const ml = measure(svg, yt.map(o.yFmt)) + 8;
+    const m = { l: ml, r: 10, t: 8, b: 22 };
+    y.range([H - m.b, m.t]);
+    const x = d3.scaleLinear().domain(d3.extent(data, (d) => d.x)).range([m.l, W - m.r]);
+    svg.append('g').attr('class', 'ar-gridl').attr('transform', `translate(${m.l},0)`)
+      .call(d3.axisLeft(y).tickValues(yt).tickSize(-(W - m.l - m.r)).tickFormat(''));
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).tickValues(yt).tickFormat(o.yFmt).tickSizeOuter(0)).call((g) => g.select('.domain').remove());
+    const xt = x.ticks(Math.max(3, Math.min(7, Math.floor((W - m.l) / 70))));
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(xt).tickFormat((v) => v + ' min').tickSizeOuter(0));
+    if (o.ref != null) {
+      svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(o.ref)).attr('y2', y(o.ref))
+        .style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 3');
+    }
+    o.series.forEach((s, i) => {
+      const line = d3.line().defined((d) => Number.isFinite(d[s.f])).x((d) => x(d.x)).y((d) => y(d[s.f]));
+      svg.append('path').datum(data).attr('d', line).attr('fill', 'none').style('stroke', s.c || dash.colors[i]).attr('stroke-width', 1.8);
+    });
+    // hover
+    const T = tip(el);
+    const dot = svg.append('g').style('display', 'none');
+    o.series.forEach((s, i) => dot.append('circle').attr('r', 3.5).attr('data-i', i).style('fill', s.c || dash.colors[i]));
+    const vline = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).style('stroke', 'var(--cds-chart-axis)').style('display', 'none');
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b)
+      .attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const [px] = d3.pointer(ev);
+        const xv = x.invert(px);
+        const d = data[d3.minIndex(data, (r) => Math.abs(r.x - xv))];
+        vline.attr('x1', x(d.x)).attr('x2', x(d.x)).style('display', null);
+        dot.style('display', null).selectAll('circle').each(function () {
+          const s = o.series[+this.getAttribute('data-i')];
+          d3.select(this).attr('cx', x(d.x)).attr('cy', y(d[s.f]));
+        });
+        const sx = (x(d.x) / W) * el.clientWidth;
+        T.show([['Minute', String(d.x)], ...o.series.map((s, i) => [s.name, o.tipFmt(d[s.f]), s.c || dash.colors[i]])], sx, 4);
+      })
+      .on('pointerleave', () => { T.hide(); dot.style('display', 'none'); vline.style('display', 'none'); });
+  }
+
+  // Bar chart (per minute, or per ring)
+  function barChart(el, o) {
+    const rows = rowsOf(o.source);
+    if (!rows) { failed(el, dash.data(o.source)); return; }
+    const data = rows.map((r) => ({ k: +r[o.k], v: +r[o.v] }));
+    const { svg, W, H } = frame(el, o.height || 180, o.label);
+    const top = Math.max(d3.max(data, (d) => d.v), o.limit || 0) * 1.08;
+    const y = d3.scaleLinear().domain([0, top]).nice(4);
+    const yt = y.ticks(4);
+    const ml = measure(svg, yt.map(o.yFmt)) + 8;
+    const m = { l: ml, r: 10, t: 8, b: 22 };
+    y.range([H - m.b, m.t]);
+    const x = d3.scaleBand().domain(data.map((d) => d.k)).range([m.l, W - m.r]).padding(0.18);
+    svg.append('g').attr('class', 'ar-gridl').attr('transform', `translate(${m.l},0)`)
+      .call(d3.axisLeft(y).tickValues(yt).tickSize(-(W - m.l - m.r)).tickFormat(''));
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).tickValues(yt).tickFormat(o.yFmt).tickSizeOuter(0)).call((g) => g.select('.domain').remove());
+    const every = Math.ceil(data.length / Math.max(3, Math.floor((W - m.l) / 60)));
+    const step = o.tickStep || every;
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`)
+      .call(d3.axisBottom(x).tickValues(data.map((d) => d.k).filter((k) => k % step === 0)).tickFormat(o.xFmt).tickSizeOuter(0));
+    svg.append('g').selectAll('rect').data(data).join('rect')
+      .attr('x', (d) => x(d.k)).attr('width', x.bandwidth())
+      .attr('y', (d) => y(d.v)).attr('height', (d) => y(0) - y(d.v))
+      .style('fill', (d) => (o.limit != null && d.v > o.limit) ? 'var(--cds-chart-status-critical)' : dash.colors[0]);
+    if (o.limit != null) {
+      svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(o.limit)).attr('y2', y(o.limit))
+        .style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 3');
+    }
+    const T = tip(el);
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b)
+      .attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const [px] = d3.pointer(ev);
+        const i = Math.max(0, Math.min(data.length - 1, Math.floor((px - m.l) / (x.step()))));
+        const d = data[i];
+        T.show([[o.kName, String(d.k)], [o.vName, o.tipFmt(d.v)]], (x(d.k) / W) * el.clientWidth, 4);
+      })
+      .on('pointerleave', () => T.hide());
+  }
+
+  window.AR = { LIMITS, summaryRow, rowsOf, fmtNum, lineChart, barChart, failed };
+})();
+</script>
+
+<script>
+/* Numbers in text and tiles: each element names its metric in data-where. */
+dash.draw('m', (el) => {
+  const metric = (el.getAttribute('data-where') || '').replace(/^metric=/, '');
+  const r = AR.summaryRow(metric);
+  if (!r) { el.textContent = '—'; return; }
+  const dg = el.getAttribute('data-fmt');
+  const n = +r.value;
+  el.textContent = (dg !== null && Number.isFinite(n)) ? AR.fmtNum(n, +dg) : r.value;
+});
+
+/* Status pills against the fixed limits in AR.LIMITS */
+dash.draw('pill', (el) => {
+  const key = el.getAttribute('data-check');
+  const r = AR.summaryRow(key);
+  el.classList.remove('ok', 'warn', 'bad');
+  if (!r) { el.textContent = '—'; return; }
+  const v = +r.value, L = AR.LIMITS[key];
+  let ok;
+  if (L.nom != null) ok = Math.abs(v - L.nom) <= L.tol;
+  else ok = v <= L.max;
+  el.classList.add(ok ? 'ok' : 'bad');
+  el.textContent = ok ? (L.ok || 'In spec') : 'Out of range';
+});
+
+const f = (dg, unit = '') => (v) => d3.format(`,.${dg}f`)(v) + unit;
+
+dash.draw('c-pts-hz', (el) => AR.lineChart(el, {
+  label: 'Point cloud rate per minute, close to 10 Hz throughout',
+  series: [{ f: 'pts_hz', name: 'Point clouds' }], yDomain: [9.9, 10.1], ref: 10,
+  yFmt: f(2), tipFmt: f(3, ' Hz') }));
+dash.draw('c-imu-hz', (el) => AR.lineChart(el, {
+  label: 'IMU rate per minute, close to 200 Hz throughout',
+  series: [{ f: 'imu_hz', name: 'IMU' }], yDomain: [199, 201], ref: 200,
+  yFmt: f(1), tipFmt: f(2, ' Hz') }));
+dash.draw('c-pts-gap', (el) => AR.barChart(el, {
+  label: 'Longest point cloud gap per minute, all under 150 ms',
+  source: 'timeline', k: 'minute', v: 'pts_gap_ms', limit: AR.LIMITS.pts_gap_limit,
+  kName: 'Minute', vName: 'Longest gap', xFmt: (v) => v + ' min', tickStep: 10,
+  yFmt: f(0), tipFmt: f(1, ' ms') }));
+dash.draw('c-imu-gap', (el) => AR.barChart(el, {
+  label: 'Longest IMU gap per minute, one spike past 20 ms',
+  source: 'timeline', k: 'minute', v: 'imu_gap_ms', limit: AR.LIMITS.imu_gap_limit,
+  kName: 'Minute', vName: 'Longest gap', xFmt: (v) => v + ' min', tickStep: 10,
+  yFmt: f(0), tipFmt: f(1, ' ms') }));
+dash.draw('c-temp-main', (el) => AR.lineChart(el, {
+  label: 'Main board temperature per minute, flat around 85 degrees C',
+  series: [{ f: 'temp_main', name: 'Main board' }], pad: 0.3,
+  yFmt: f(1), tipFmt: f(2, ' °C') }));
+dash.draw('c-temp-top', (el) => AR.lineChart(el, {
+  label: 'Top board temperature per minute, flat around 23 degrees C',
+  series: [{ f: 'temp_top', name: 'Top board', c: 'var(--cds-chart-muted)' }], pad: 0.3,
+  yFmt: f(1), tipFmt: f(2, ' °C') }));
+dash.draw('c-valid', (el) => AR.lineChart(el, {
+  label: 'Share of points with a return per minute',
+  series: [{ f: 'valid_pct', name: 'With return' }], pad: 0.5,
+  yFmt: f(0, '%'), tipFmt: f(2, ' %') }));
+dash.draw('c-range', (el) => AR.lineChart(el, {
+  label: 'Median range of returns per minute',
+  series: [{ f: 'range_med_m', name: 'Median range' }], pad: 0.05,
+  yFmt: f(2), tipFmt: f(3, ' m') }));
+const GYRO = () => [
+  { f: 'gyro_x_dps', name: 'X', c: dash.colors[0] },
+  { f: 'gyro_y_dps', name: 'Y', c: dash.colors[1] },
+  { f: 'gyro_z_dps', name: 'Z', c: dash.colors[2] },
+];
+dash.draw('gyro-legend', (el) => {
+  el.replaceChildren(...GYRO().map((s) => {
+    const sp = document.createElement('span'); const i = document.createElement('i');
+    i.style.background = s.c; sp.append(i, document.createTextNode(s.name)); return sp;
+  }));
+});
+dash.draw('c-gyro', (el) => AR.lineChart(el, {
+  label: 'Gyro bias per axis per minute, steady',
+  series: GYRO(), pad: 0.05, ref: 0,
+  yFmt: f(1), tipFmt: f(3, ' °/s') }));
+dash.draw('c-rings', (el) => AR.barChart(el, {
+  label: 'Share of points with a return for each of the 96 rings',
+  source: 'rings', k: 'ring', v: 'valid_pct', height: 200,
+  kName: 'Ring', vName: 'With return', xFmt: (v) => String(v), tickStep: 16,
+  yFmt: f(0, '%'), tipFmt: f(1, ' %') }));
+
+/* Tables */
+function fillTable(tbody, id, cols, key) {
+  const rows = AR.rowsOf(id);
+  if (!rows) { tbody.replaceChildren(); return; }
+  tbody.replaceChildren(...rows.map((r) => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-key', encodeURIComponent(r[key]));
+    cols.forEach(([c, num, dg]) => {
+      const td = document.createElement('td');
+      if (num) td.className = 'num';
+      const n = +r[c];
+      td.textContent = (dg != null && Number.isFinite(n)) ? AR.fmtNum(n, dg) : (r[c] ?? '');
+      tr.appendChild(td);
+    });
+    return tr;
+  }));
+}
+dash.draw('t-scans', (el) => fillTable(el, 'scan_sizes', [['columns', false, 0], ['scans', true, 0], ['share_pct', true, 2]], 'columns'));
+dash.draw('t-noise', (el) => fillTable(el, 'noise_bands', [['band', false], ['pixels', true, 0], ['sigma_mm_median', true, 1]], 'band'));
+dash.draw('t-specs', (el) => fillTable(el, 'summary', [['label', false], ['value', true], ['unit', false]], 'metric'));
+
+/* 3D point cloud: canvas, drag to rotate */
+dash.draw('c-cloud', {
+  mount(el) {
+    el.replaceChildren();
+    const c = document.createElement('canvas');
+    const hint = document.createElement('div'); hint.className = 'ar-hint'; hint.textContent = 'Drag to rotate';
+    el.append(c, hint);
+    const st = { c, yaw: -0.9, pitch: 0.95, pts: null, drag: null };
+    c.addEventListener('pointerdown', (e) => { st.drag = [e.clientX, e.clientY, st.yaw, st.pitch]; c.setPointerCapture(e.pointerId); });
+    c.addEventListener('pointermove', (e) => {
+      if (!st.drag) return;
+      const [x0, y0, yw, pt] = st.drag;
+      st.yaw = yw + (e.clientX - x0) * 0.01;
+      st.pitch = Math.max(0.05, Math.min(1.55, pt + (e.clientY - y0) * 0.01));
+      st.render && st.render();
+    });
+    c.addEventListener('pointerup', () => { st.drag = null; });
+    c.addEventListener('pointercancel', () => { st.drag = null; });
+    return st;
+  },
+  update(el, st) {
+    const rows = AR.rowsOf('frame');
+    if (!rows) return;
+    if (!st.pts) {
+      st.pts = rows.map((r) => [+r.x, +r.y, +r.z]).filter((p) => p.every(Number.isFinite));
+      const zs = st.pts.map((p) => p[2]).sort(d3.ascending);
+      const zc = d3.scaleSequential(d3.interpolateTurbo).domain([d3.quantile(zs, 0.02), d3.quantile(zs, 0.98)]);
+      st.col = st.pts.map((p) => zc(p[2]));
+      const rh = st.pts.map((p) => Math.hypot(p[0], p[1])).sort(d3.ascending);
+      st.R = d3.quantile(rh, 0.95) || 5;
+      st.zm = d3.median(zs);
+    }
+    const W = el.clientWidth || 300, H = Math.max(300, Math.min(520, W * 0.62));
+    const dpr = window.devicePixelRatio || 1;
+    st.c.width = W * dpr; st.c.height = H * dpr; st.c.style.height = H + 'px';
+    st.render = () => {
+      const g = st.c.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      const s = (Math.min(W, H) * 0.47) / st.R;
+      const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
+      g.globalAlpha = 0.85;
+      for (let i = 0; i < st.pts.length; i++) {
+        const [x, y, z] = st.pts[i];
+        const xr = x * cy - y * sy, yr = x * sy + y * cy;
+        const u = W / 2 + xr * s;
+        const v = H / 2 - ((z - st.zm) * sp - yr * cp) * s;
+        if (u < 0 || u > W || v < 0 || v > H) continue;
+        g.fillStyle = st.col[i];
+        g.fillRect(u - 0.9, v - 0.9, 1.8, 1.8);
+      }
+      // sensor origin
+      g.globalAlpha = 1;
+      g.fillStyle = getComputedStyle(el).color;
+      const ou = W / 2, ov = H / 2 + st.zm * sp * s;
+      g.beginPath(); g.arc(ou, ov, 3.5, 0, Math.PI * 2); g.fill();
+    };
+    st.render();
+  },
+});
+</script>

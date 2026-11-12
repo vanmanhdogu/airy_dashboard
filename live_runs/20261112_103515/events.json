@@ -1,0 +1,498 @@
+[
+ {
+  "t": 1794447434,
+  "el": 118,
+  "lidar": "airy2",
+  "kind": "imu_gap",
+  "text": "IMU gap 1110.9 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447435,
+  "el": 119,
+  "lidar": "airy2",
+  "kind": "imu_gap_ok",
+  "text": "imu gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447438,
+  "el": 122,
+  "lidar": "airy2",
+  "kind": "hz",
+  "text": "point cloud rate 8.8 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447439,
+  "el": 123,
+  "lidar": "airy2",
+  "kind": "no_points",
+  "text": "no point clouds in ROS",
+  "level": "bad"
+ },
+ {
+  "t": 1794447439,
+  "el": 123,
+  "lidar": "airy2",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447439,
+  "el": 123,
+  "lidar": "airy2",
+  "kind": "gap",
+  "text": "point cloud gap 1678.3 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447439,
+  "el": 123,
+  "lidar": "airy2",
+  "kind": "no_wire",
+  "text": "no packets from the lidar on the cable",
+  "level": "bad"
+ },
+ {
+  "t": 1794447441,
+  "el": 125,
+  "lidar": "airy2",
+  "kind": "no_points_ok",
+  "text": "no points back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447441,
+  "el": 125,
+  "lidar": "airy2",
+  "kind": "hz",
+  "text": "point cloud rate 3.8 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447441,
+  "el": 125,
+  "lidar": "airy2",
+  "kind": "imu_gap",
+  "text": "IMU gap 3179.9 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447441,
+  "el": 125,
+  "lidar": "airy2",
+  "kind": "lost",
+  "text": "7110 point packets lost on the cable",
+  "level": "warn"
+ },
+ {
+  "t": 1794447441,
+  "el": 125,
+  "lidar": "airy2",
+  "kind": "imu_lost",
+  "text": "635 IMU packets lost on the cable",
+  "level": "warn"
+ },
+ {
+  "t": 1794447441,
+  "el": 125,
+  "lidar": "airy2",
+  "kind": "no_wire_ok",
+  "text": "no wire back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447442,
+  "el": 126,
+  "lidar": "airy2",
+  "kind": "gap_ok",
+  "text": "gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447442,
+  "el": 126,
+  "lidar": "airy2",
+  "kind": "imu_gap_ok",
+  "text": "imu gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447442,
+  "el": 126,
+  "lidar": "airy2",
+  "kind": "lost_ok",
+  "text": "lost back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447442,
+  "el": 126,
+  "lidar": "airy2",
+  "kind": "imu_lost_ok",
+  "text": "imu lost back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447446,
+  "el": 130,
+  "lidar": "airy2",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447717,
+  "el": 401,
+  "lidar": "airy1",
+  "kind": "imu_gap",
+  "text": "IMU gap 419.2 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447718,
+  "el": 402,
+  "lidar": "airy1",
+  "kind": "imu_gap_ok",
+  "text": "imu gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447802,
+  "el": 486,
+  "lidar": "airy1",
+  "kind": "hz",
+  "text": "point cloud rate 10.4 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447802,
+  "el": 486,
+  "lidar": "airy2",
+  "kind": "hz",
+  "text": "point cloud rate 10.4 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447803,
+  "el": 487,
+  "lidar": "airy1",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447803,
+  "el": 487,
+  "lidar": "airy2",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447810,
+  "el": 494,
+  "lidar": "airy1",
+  "kind": "hz",
+  "text": "point cloud rate 10.4 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447810,
+  "el": 494,
+  "lidar": "airy2",
+  "kind": "hz",
+  "text": "point cloud rate 10.4 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447811,
+  "el": 495,
+  "lidar": "airy1",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447811,
+  "el": 495,
+  "lidar": "airy2",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447884,
+  "el": 568,
+  "lidar": "airy1",
+  "kind": "hz",
+  "text": "point cloud rate 9.4 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447885,
+  "el": 569,
+  "lidar": "airy1",
+  "kind": "no_points",
+  "text": "no point clouds in ROS",
+  "level": "bad"
+ },
+ {
+  "t": 1794447885,
+  "el": 569,
+  "lidar": "airy1",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447885,
+  "el": 569,
+  "lidar": "airy1",
+  "kind": "gap",
+  "text": "point cloud gap 1378.1 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447885,
+  "el": 569,
+  "lidar": "airy1",
+  "kind": "no_wire",
+  "text": "no packets from the lidar on the cable",
+  "level": "bad"
+ },
+ {
+  "t": 1794447894,
+  "el": 578,
+  "lidar": "airy1",
+  "kind": "gap_ok",
+  "text": "gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447905,
+  "el": 589,
+  "lidar": "airy1",
+  "kind": "no_points_ok",
+  "text": "no points back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447905,
+  "el": 589,
+  "lidar": "airy1",
+  "kind": "hz",
+  "text": "point cloud rate 2.0 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447905,
+  "el": 589,
+  "lidar": "airy1",
+  "kind": "gap",
+  "text": "point cloud gap 20524.2 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447905,
+  "el": 589,
+  "lidar": "airy1",
+  "kind": "no_wire_ok",
+  "text": "no wire back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447906,
+  "el": 590,
+  "lidar": "airy1",
+  "kind": "gap_ok",
+  "text": "gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447909,
+  "el": 593,
+  "lidar": "airy1",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447976,
+  "el": 660,
+  "lidar": "airy1",
+  "kind": "hz",
+  "text": "point cloud rate 8.2 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447977,
+  "el": 661,
+  "lidar": "airy1",
+  "kind": "no_points",
+  "text": "no point clouds in ROS",
+  "level": "bad"
+ },
+ {
+  "t": 1794447977,
+  "el": 661,
+  "lidar": "airy1",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447977,
+  "el": 661,
+  "lidar": "airy1",
+  "kind": "gap",
+  "text": "point cloud gap 1940.4 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447977,
+  "el": 661,
+  "lidar": "airy1",
+  "kind": "no_wire",
+  "text": "no packets from the lidar on the cable",
+  "level": "bad"
+ },
+ {
+  "t": 1794447986,
+  "el": 670,
+  "lidar": "airy1",
+  "kind": "gap_ok",
+  "text": "gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447994,
+  "el": 678,
+  "lidar": "airy2",
+  "kind": "hz",
+  "text": "point cloud rate 11.0 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447995,
+  "el": 679,
+  "lidar": "airy2",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447996,
+  "el": 680,
+  "lidar": "airy1",
+  "kind": "no_points_ok",
+  "text": "no points back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447996,
+  "el": 680,
+  "lidar": "airy1",
+  "kind": "hz",
+  "text": "point cloud rate 0.4 Hz",
+  "level": "warn"
+ },
+ {
+  "t": 1794447996,
+  "el": 680,
+  "lidar": "airy1",
+  "kind": "gap",
+  "text": "point cloud gap 20901.2 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794447996,
+  "el": 680,
+  "lidar": "airy1",
+  "kind": "no_wire_ok",
+  "text": "no wire back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794447997,
+  "el": 681,
+  "lidar": "airy1",
+  "kind": "gap_ok",
+  "text": "gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794448001,
+  "el": 685,
+  "lidar": "airy1",
+  "kind": "hz_ok",
+  "text": "hz back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794448529,
+  "el": 1213,
+  "lidar": "airy2",
+  "kind": "imu_gap",
+  "text": "IMU gap 875.6 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794448530,
+  "el": 1214,
+  "lidar": "airy2",
+  "kind": "imu_gap_ok",
+  "text": "imu gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794448638,
+  "el": 1322,
+  "lidar": "airy2",
+  "kind": "imu_gap",
+  "text": "IMU gap 689.7 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794448639,
+  "el": 1323,
+  "lidar": "airy2",
+  "kind": "imu_gap_ok",
+  "text": "imu gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794448853,
+  "el": 1537,
+  "lidar": "airy1",
+  "kind": "imu_gap",
+  "text": "IMU gap 1044.7 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794448853,
+  "el": 1537,
+  "lidar": "airy2",
+  "kind": "imu_gap",
+  "text": "IMU gap 694.7 ms",
+  "level": "warn"
+ },
+ {
+  "t": 1794448854,
+  "el": 1538,
+  "lidar": "airy1",
+  "kind": "imu_gap_ok",
+  "text": "imu gap back to normal",
+  "level": "ok"
+ },
+ {
+  "t": 1794448854,
+  "el": 1538,
+  "lidar": "airy2",
+  "kind": "imu_gap_ok",
+  "text": "imu gap back to normal",
+  "level": "ok"
+ }
+]

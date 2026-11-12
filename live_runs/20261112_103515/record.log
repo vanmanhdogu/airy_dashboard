@@ -1,0 +1,24 @@
+[WARN] [ros2bag]: Positional "topics" argument deprecated. Please use optional "--topics" argument instead.
+[WARN] [1794447320.408034484] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1794447320.408052903] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1794447320.421104748] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[INFO] [1794447320.421133026] [rosbag2_recorder]: Event publisher thread: Started
+[INFO] [1794447320.424637692] [rosbag2_recorder]: Starting recording to '/home/dogux/airy_test/bags/airy2x_20261112_103515'
+[INFO] [1794447320.425968575] [rosbag2_recorder]: Listening for topics...
+[INFO] [1794447320.425986372] [rosbag2_recorder]: Recording...
+[INFO] [1794447320.426026026] [rosbag2_recorder]: Topics discovery started.
+[INFO] [1794447322.622323889] [rosbag2_recorder]: Subscribed to topic '/airy1/points'
+[INFO] [1794447322.623619266] [rosbag2_recorder]: Subscribed to topic '/airy1/imu'
+[INFO] [1794447322.624159585] [rosbag2_recorder]: Subscribed to topic '/airy2/points'
+[INFO] [1794447322.625007110] [rosbag2_recorder]: Subscribed to topic '/airy2/imu'
+[INFO] [1794447322.625032423] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[INFO] [1794447322.625044497] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [1794447622.632419220] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1794447922.630169535] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1794448222.630297505] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1794448522.631913582] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1794448822.631855912] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1794448871.782595194] [rosbag2_recorder]: Pausing recording.
+[INFO] [1794448871.782653533] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1794448871.787239741] [rosbag2_recorder]: Recording stopped
+[INFO] [1794448871.789179148] [rosbag2_recorder]: Event publisher thread: Exited

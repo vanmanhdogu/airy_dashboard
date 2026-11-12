@@ -1,0 +1,12 @@
+{"t": 1794446627, "el": 10, "lidar": "airy1", "kind": "imu_gap", "text": "IMU gap 22.0 ms", "level": "warn"}
+{"t": 1794446627, "el": 10, "lidar": "airy2", "kind": "imu_gap", "text": "IMU gap 23.9 ms", "level": "warn"}
+{"t": 1794446628, "el": 11, "lidar": "airy1", "kind": "imu_gap_ok", "text": "imu gap back to normal", "level": "ok"}
+{"t": 1794446628, "el": 11, "lidar": "airy2", "kind": "imu_gap_ok", "text": "imu gap back to normal", "level": "ok"}
+{"t": 1794446643, "el": 26, "lidar": "airy1", "kind": "imu_gap", "text": "IMU gap 21.9 ms", "level": "warn"}
+{"t": 1794446643, "el": 26, "lidar": "airy2", "kind": "imu_gap", "text": "IMU gap 28.4 ms", "level": "warn"}
+{"t": 1794446644, "el": 27, "lidar": "airy1", "kind": "imu_gap_ok", "text": "imu gap back to normal", "level": "ok"}
+{"t": 1794446644, "el": 27, "lidar": "airy2", "kind": "imu_gap_ok", "text": "imu gap back to normal", "level": "ok"}
+{"t": 1794446656, "el": 39, "lidar": "airy2", "kind": "imu_gap", "text": "IMU gap 27.5 ms", "level": "warn"}
+{"t": 1794446658, "el": 41, "lidar": "airy2", "kind": "imu_gap_ok", "text": "imu gap back to normal", "level": "ok"}
+{"t": 1794446672, "el": 55, "lidar": "airy2", "kind": "gap", "text": "point cloud gap 198.9 ms", "level": "warn"}
+{"t": 1794446673, "el": 56, "lidar": "airy2", "kind": "gap_ok", "text": "gap back to normal", "level": "ok"}
