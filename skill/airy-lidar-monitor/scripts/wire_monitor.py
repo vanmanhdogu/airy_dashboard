@@ -33,6 +33,23 @@ def temp(b0, b1):
     return round((-v if b1 & 0x80 else v) * 0.0625, 4)
 
 
+def seq_gap(prev, cnt, dt):
+    """Packets lost between two counter values, or None for a reset/reorder.
+    Some Airy firmware uses a 16-bit counter (upper 2 bytes 0): it wraps every 65536 packets
+    (~29 s at 2240/s). That wrap is not a restart. A reboot restarts the counter near 0 after
+    ~20 s of silence."""
+    gap = (cnt - prev) & 0xFFFFFFFF
+    if 1 <= gap < 1_000_000:
+        return gap - 1
+    if prev <= 0xFFFF and cnt <= 0xFFFF:                    # 16-bit counter wrapped
+        if dt > 5 and cnt < 100:
+            return None                                     # long silence then ~0: reboot
+        g16 = (cnt - prev) & 0xFFFF
+        if 1 <= g16 <= dt * 3000 + 100:                     # consistent with the time elapsed
+            return g16 - 1
+    return None
+
+
 def fresh():
     return dict(msop=0, msop_lost=0, msop_bad=0, imu=0, imu_lost=0, imu_bad=0, difop=0,
                 periods=[], t_main=None, t_top=None)
@@ -46,7 +63,7 @@ for l in LIDARS:
         port_kind[(l['ip'], int(l['imu_port']))] = (l['name'], 'imu')
 names = [l['name'] for l in LIDARS]
 cur = {n: fresh() for n in names}
-state = {n: dict(msop_cnt=None, imu_cnt=None, last_az=None, wrap_ts=None, difop=None) for n in names}
+state = {n: dict(msop_cnt=None, imu_cnt=None, msop_t=0.0, imu_t=0.0, last_az=None, wrap_ts=None, difop=None) for n in names}
 totals = {n: dict(msop_lost=0, imu_lost=0) for n in names}
 
 out = open(out_path, 'a', buffering=1)
@@ -68,13 +85,14 @@ while True:
             if kind == 'msop' and len(d) >= 46:
                 c['msop'] += 1
                 cnt = struct.unpack_from('>I', d, 12)[0]          # pkt_cnt_bot2top
+                tnow = time.time()
                 if st['msop_cnt'] is not None:
-                    gap = (cnt - st['msop_cnt']) & 0xFFFFFFFF
-                    if 1 < gap < 1_000_000:
-                        c['msop_lost'] += gap - 1
-                    elif gap != 1:
+                    lost = seq_gap(st['msop_cnt'], cnt, tnow - st['msop_t'])
+                    if lost is None:
                         c['msop_bad'] += 1                          # reorder / counter reset (reboot)
-                st['msop_cnt'] = cnt
+                    else:
+                        c['msop_lost'] += lost
+                st['msop_cnt'] = cnt; st['msop_t'] = tnow
                 c['t_main'] = (d[38], d[39]); c['t_top'] = (d[40], d[41])
                 az = struct.unpack_from('>H', d, 44)[0]             # first block azimuth, 0.01 deg
                 if st['last_az'] is not None and az + 18000 < st['last_az']:   # new rotation
@@ -86,13 +104,14 @@ while True:
             elif kind == 'imu' and len(d) >= 8:
                 c['imu'] += 1
                 cnt = struct.unpack_from('>I', d, len(d) - 6)[0]
+                tnow = time.time()
                 if st['imu_cnt'] is not None:
-                    gap = (cnt - st['imu_cnt']) & 0xFFFFFFFF
-                    if 1 < gap < 1_000_000:
-                        c['imu_lost'] += gap - 1
-                    elif gap != 1:
+                    lost = seq_gap(st['imu_cnt'], cnt, tnow - st['imu_t'])
+                    if lost is None:
                         c['imu_bad'] += 1
-                st['imu_cnt'] = cnt
+                    else:
+                        c['imu_lost'] += lost
+                st['imu_cnt'] = cnt; st['imu_t'] = tnow
             elif kind == 'difop' and len(d) >= 1092:
                 c['difop'] += 1
                 v_main, v_12, v_mcu, v_1, i_main = struct.unpack_from('>5H', d, 1066)

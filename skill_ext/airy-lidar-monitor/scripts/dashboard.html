@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Airy live monitor</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --panel: #fcfcfb; --line: #e3e2de; --grid: #ecebe7; --axis: #c9c8c2;
+  --fg: #0b0b0b; --fg2: #52514e; --fg3: #77766f;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --ok: #0ca30c; --warn: #fab219; --serious: #ec835a; --bad: #d03b3b;
+  --ref: #8a8983;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --bg: #121211; --panel: #1a1a19; --line: #2e2e2c; --grid: #262624; --axis: #45443f;
+    --fg: #f0efec; --fg2: #c3c2b7; --fg3: #9a998f;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --ref: #8d8c84;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --panel: #1a1a19; --line: #2e2e2c; --grid: #262624; --axis: #45443f;
+  --fg: #f0efec; --fg2: #c3c2b7; --fg3: #9a998f;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --ref: #8d8c84;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
+main { max-width: 1500px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 22px; }
+h1 { font-size: 22px; font-weight: 600; margin: 0; }
+h2 { font-size: 16px; font-weight: 600; margin: 0 0 10px; }
+.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.meta { color: var(--fg2); font-size: 13px; margin-top: 4px; }
+.conn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fg2); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--fg3); flex: none; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.prog { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 8px; width: min(460px, 100%); }
+.prog > div { height: 100%; background: var(--fg2); width: 0; transition: width .5s; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { background: var(--panel); color: var(--fg2); border: 0; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.lidars { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 16px; }
+.lhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.lname { font-weight: 600; font-size: 16px; }
+.lip { color: var(--fg3); font-size: 13px; }
+.badge { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.tl { font-size: 12px; color: var(--fg2); display: flex; justify-content: space-between; gap: 4px; }
+.tv { font-size: 22px; font-weight: 600; margin-top: 2px; white-space: nowrap; }
+.tu { font-size: 12px; font-weight: 400; color: var(--fg2); margin-left: 3px; }
+.ts { font-size: 11.5px; color: var(--fg3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st { font-size: 12px; font-weight: 700; }
+.st.ok { color: var(--ok); } .st.warn { color: var(--warn); } .st.bad { color: var(--bad); }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 16px; }
+.ch h3 { font-size: 14px; font-weight: 600; margin: 0; }
+.chd { font-size: 12px; color: var(--fg3); margin: 2px 0 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--fg2); margin-bottom: 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.legend i.dash { height: 0; border-top: 2px dashed var(--ref); }
+.cv { position: relative; height: 190px; }
+.cv canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tip { position: fixed; pointer-events: none; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0,0,0,.15); border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.5; z-index: 9; display: none; white-space: nowrap; }
+.tip .k { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.tip .m { color: var(--fg3); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--fg2); font-weight: 600; }
+.evwrap { max-height: 320px; overflow: auto; }
+.note { color: var(--fg2); font-size: 13px; max-width: 90ch; margin: 0; }
+.empty { color: var(--fg3); font-size: 13px; }
+details summary { cursor: pointer; font-weight: 600; }
+details p, details li { color: var(--fg2); font-size: 13px; max-width: 95ch; }
+.btn { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover:not(:disabled) { border-color: var(--fg3); }
+.btn:disabled { color: var(--fg3); cursor: default; }
+.btn.stop::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--bad); }
+.btn.go::before { content: ""; border-left: 8px solid var(--ok); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+.ctlall { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg2); }
+.lhead .badge { margin-left: auto; }
+.cerr { color: var(--bad); font-size: 12.5px; margin: -6px 0 10px; }
+.card.standby .tiles { opacity: .45; }
+.dot.idle { background: var(--fg3); }
+@media (max-width: 600px) { .tv { font-size: 19px; } .cv { height: 170px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <h1 id="title">Airy live monitor</h1>
+      <div class="meta" id="meta">connecting…</div>
+      <div class="prog"><div id="prog"></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <span class="conn"><span class="dot" id="conndot"></span><span id="conn">connecting…</span></span>
+      <div class="ctlall" id="ctlall" hidden><span>All lidars</span><button class="btn stop" data-all="standby">Standby</button><button class="btn go" data-all="run">Run</button></div>
+      <div class="seg" id="win" role="group" aria-label="Time window">
+        <button data-w="300">5 min</button><button data-w="900" aria-pressed="true">15 min</button><button data-w="1800">30 min</button><button data-w="0">All</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="lidars" id="lidars"></section>
+
+  <section>
+    <h2>Frequency and timing</h2>
+    <div class="charts" id="g-freq"></div>
+  </section>
+  <section>
+    <h2>Power and temperature</h2>
+    <div class="charts" id="g-power"></div>
+  </section>
+  <section>
+    <h2>Data quality</h2>
+    <div class="charts" id="g-quality"></div>
+  </section>
+  <section>
+    <h2>PC receiving the data</h2>
+    <div class="charts" id="g-pc"></div>
+  </section>
+
+  <section class="card">
+    <h2>Events</h2>
+    <p class="note" style="margin-bottom:8px">Every time a value goes out of range and when it comes back. Newest first.</p>
+    <div class="evwrap"><table><thead><tr><th>Time</th><th>Clock</th><th>Lidar</th><th>What happened</th></tr></thead><tbody id="ev"></tbody></table></div>
+  </section>
+
+  <details class="card">
+    <summary>Where each number comes from</summary>
+    <ul>
+      <li><b>From the cable</b> (packets read before the driver touches them): motor speed measured from the lidar's own packet timestamps; lost packets from the lidar's sequence counters; input voltage, 12 V rail, current from the lidar's status packet (power = input voltage × current); board temperatures from the point-packet header.</li>
+      <li><b>From ROS</b> (what a robot program receives): point cloud rate (5 s average), longest gap between clouds in each second, points with a return, scans narrower than 900 columns, delay from scan start to arrival, IMU rate.</li>
+      <li><b>From the PC</b>: CPU use, UDP packets dropped because the receiving socket was full, packets dropped by the network card, driver CPU.</li>
+      <li>How to read it: motor speed stays at 600 rpm while ROS rate drops → the problem is after the lidar (network, PC or driver). Motor speed drops or voltage sags at the same time → power or the lidar itself. Lost packets on the cable → cable or switch. UDP drops → PC too slow or socket buffer too small.</li>
+      <li><b>Standby / Run</b>: switches the lidar's own operation mode (the "Operation Mode" setting on its web page). In standby the motor and laser are off and only status packets come, so the lidar's problem checks are paused, and for 30 s after Run while the motor spins up. The ROS driver keeps running and picks the data up again by itself. The lidar saves the mode like its other web settings, so expect it to still be in standby after a power cycle.</li>
+      <li>Voltage and current: the lidar's own status packet, once per second. The 0.01 V / 0.01 A scale is inferred, not documented; confirm once with a multimeter. Too slow to catch millisecond dips.</li><li>Delay to ROS is only meaningful when the cloud stamps are host time, or lidar time synced by PTP.</li>
+    </ul>
+  </details>
+</main>
+<div class="tip" id="tip"></div>
+
+<script>
+'use strict';
+// Lidars come from the monitor (META.lidars). Fixed color order; up to 4 lidars are
+// validated as distinct series colors.
+const COLORS = ['--s1', '--s2', '--s3', '--s4'];
+let L = [];
+const ROWS = [], EVENTS = [];
+let META = null, WIN = 900, lastOk = 0, serverNow = 0;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmtT = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+const clock = t => new Date(t * 1000).toLocaleTimeString([], { hour12: false });
+const nf = (v, d) => v == null || Number.isNaN(v) ? '–' : Number(v).toFixed(d);
+
+// ---------------------------------------------------------------- tiles
+const TILES = [
+  { k: 'pts_hz', l: 'Point cloud rate', u: 'Hz', d: 2, st: v => v == null ? null : Math.abs(v - 10) <= 0.1 ? 'ok' : Math.abs(v - 10) <= 0.3 ? 'warn' : 'bad', sub: r => 'gap ' + nf(r.pts_gap_ms, 0) + ' ms' },
+  { k: 'rpm_meas', l: 'Motor speed', u: 'rpm', d: 1, st: v => v == null ? null : Math.abs(v - 600) <= 3 ? 'ok' : Math.abs(v - 600) <= 6 ? 'warn' : 'bad', sub: r => 'set ' + nf(r.rpm_set, 0) + ' rpm' },
+  { k: 'power', l: 'Power', u: 'W', d: 2, sub: r => 'avg ' + nf(avg(r._id, 'power'), 2) + ' W' },
+  { k: 'v_main', l: 'Input voltage', u: 'V', d: 2, st: (v, r) => v == null || base(r._id, 'v_main') == null ? null : base(r._id, 'v_main') - v > 1 ? 'bad' : base(r._id, 'v_main') - v > 0.3 ? 'warn' : 'ok', sub: r => '12 V rail ' + nf(r.v_12v, 2) + ' V' },
+  { k: 'i_main', l: 'Current', u: 'A', d: 2, sub: r => 'max ' + nf(mx(r._id, 'i_main'), 2) + ' A' },
+  { k: 't_main', l: 'Main board', u: '°C', d: 1, st: v => v == null ? null : v < 90 ? 'ok' : v < 95 ? 'warn' : 'bad', sub: r => rate(r._id, 't_main') },
+  { k: 't_top', l: 'Top board', u: '°C', d: 1, sub: r => rate(r._id, 't_top') },
+  { k: 'msop_lost_total', l: 'Lost packets', u: '', d: 0, st: v => v == null ? null : v === 0 ? 'ok' : 'warn', sub: r => 'IMU lost ' + nf(r.imu_lost_total, 0) },
+  { k: 'valid_pct', l: 'Points with return', u: '%', d: 1, sub: r => 'narrow scans ' + nf(r.short_scans, 0) + '/s' },
+  { k: 'imu_hz', l: 'IMU rate', u: 'Hz', d: 1, st: v => v == null ? null : Math.abs(v - 200) <= 2 ? 'ok' : 'bad', sub: r => 'gap ' + nf(r.imu_gap_ms, 1) + ' ms' },
+  { k: 'delay_ms', l: 'Delay to ROS', u: 'ms', d: 0, st: v => v == null ? null : v < 150 ? 'ok' : 'warn', sub: () => 'incl. 100 ms scan' },
+];
+const STI = { ok: '✓ OK', warn: '! Check', bad: '✕ Fail' };
+function avg(id, k) { const v = ROWS.map(r => r[id] && r[id][k]).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
+function mx(id, k) { const v = ROWS.map(r => r[id] && r[id][k]).filter(x => x != null); return v.length ? Math.max(...v) : null; }
+function base(id, k) { const v = ROWS.slice(20, 80).map(r => r[id] && r[id][k]).filter(x => x != null).sort((a, b) => a - b); return v.length ? v[v.length >> 1] : null; }
+function rate(id, k) {
+  const n = ROWS.length; if (n < 120) { const f = ROWS.find(r => r[id] && r[id][k] != null); return 'start ' + nf(f && f[id][k], 1); }
+  const a = ROWS[n - 61][id][k], b = ROWS[n - 1][id][k]; if (a == null || b == null) return '';
+  const d = b - a; return (d >= 0 ? '+' : '') + d.toFixed(2) + ' °C / min';
+}
+function buildLidars() {
+  const box = document.getElementById('lidars');
+  box.innerHTML = L.map(l => `<div class="card"><div class="lhead"><span class="sw" style="background:var(${l.color})"></span><span class="lname">${l.label}</span><span class="lip" id="ip-${l.id}"></span><span class="badge" id="b-${l.id}"><span class="dot"></span><span>waiting</span></span><button class="btn" id="c-${l.id}" data-lidar="${l.id}" hidden></button></div><div class="cerr" id="ce-${l.id}" hidden></div><div class="tiles">${TILES.map(t => `<div class="tile"><div class="tl"><span>${t.l}</span><span class="st" id="s-${l.id}-${t.k}"></span></div><div class="tv"><span id="v-${l.id}-${t.k}">–</span><span class="tu">${t.u}</span></div><div class="ts" id="u-${l.id}-${t.k}">&nbsp;</div></div>`).join('')}</div></div>`).join('');
+}
+function updateTiles() {
+  const r0 = ROWS[ROWS.length - 1]; if (!r0) return;
+  for (const l of L) {
+    const r = Object.assign({ _id: l.id }, r0[l.id] || {});
+    let worst = 'ok';
+    const off = CTL && CTL[l.id] && (CTL[l.id].mode === 'standby' || CTL[l.id].busy);   // no OK/Fail marks while off on purpose
+    for (const t of TILES) {
+      const v = r[t.k];
+      document.getElementById(`v-${l.id}-${t.k}`).textContent = nf(v, t.d);
+      const st = t.st && !off ? t.st(v, r) : null;
+      const se = document.getElementById(`s-${l.id}-${t.k}`);
+      se.className = 'st ' + (st || ''); se.textContent = st ? STI[st] : '';
+      if (st === 'bad' || (st === 'warn' && worst === 'ok')) worst = st;
+      if (t.sub) document.getElementById(`u-${l.id}-${t.k}`).textContent = t.sub(r);
+    }
+    if (r.msop == null && r.pts_n === 0) worst = 'bad';
+    const b = document.getElementById('b-' + l.id);
+    b.innerHTML = `<span class="dot ${worst}"></span><span>${{ ok: 'All OK', warn: 'Check', bad: 'Problem' }[worst]}</span>`;
+  }
+  updateCtl();
+}
+
+// ---------------------------------------------------------------- standby / run
+// Standby = the lidar's own "Operation Mode: Standby" (web page setting): motor and laser off.
+let CTL = null;
+function updateCtl() {
+  if (!CTL || !META || !META.control) return;
+  document.getElementById('ctlall').hidden = false;
+  let anyRun = false, anyStby = false, anyBusy = false;
+  for (const l of L) {
+    const c = CTL[l.id] || {}, btn = document.getElementById('c-' + l.id), card = btn.closest('.card');
+    const err = document.getElementById('ce-' + l.id);
+    btn.hidden = false;
+    card.classList.toggle('standby', c.mode === 'standby');
+    if (c.busy) {
+      anyBusy = true; btn.disabled = true; btn.className = 'btn';
+      btn.textContent = c.busy === 'standby' ? 'Going to standby…' : 'Starting…';
+    } else if (c.mode === 'standby') {
+      anyStby = true; btn.disabled = false; btn.className = 'btn go'; btn.textContent = 'Run'; btn.dataset.mode = 'run';
+    } else if (c.mode === 'run') {
+      anyRun = true; btn.disabled = false; btn.className = 'btn stop'; btn.textContent = 'Standby'; btn.dataset.mode = 'standby';
+    } else {
+      btn.disabled = true; btn.className = 'btn'; btn.textContent = 'Web page unreachable';
+    }
+    err.hidden = !c.error; err.textContent = c.error ? 'Last switch failed: ' + c.error : '';
+    if (c.mode === 'standby' || c.busy) {
+      const b = document.getElementById('b-' + l.id);
+      const since = c.since && c.mode === 'standby' && !c.busy ? ' · ' + fmtT(serverNow - c.since) : '';
+      b.innerHTML = `<span class="dot idle"></span><span>${c.busy ? 'Switching' : 'Standby' + since}</span>`;
+    }
+  }
+  const [bs, br] = document.querySelectorAll('#ctlall button');
+  bs.disabled = anyBusy || !anyRun; br.disabled = anyBusy || !anyStby;
+}
+async function sendCtl(lidars, mode) {
+  if (mode === 'standby' && !confirm(`Put ${lidars.join(' and ')} in standby?\n\nThe motor and laser stop: no point clouds or IMU until you press Run. The lidar saves it like its other web settings, so expect it to still be in standby after a power cycle.`)) return;
+  try {
+    const r = await fetch('/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lidars, mode }) });
+    if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+    for (const n of (await r.json()).started) if (CTL[n]) CTL[n].busy = mode;
+    updateCtl();
+  } catch (e) { alert('Could not reach the monitor: ' + e.message); }
+}
+document.getElementById('lidars').addEventListener('click', e => {
+  const b = e.target.closest('button[data-lidar]'); if (b && !b.disabled) sendCtl([b.dataset.lidar], b.dataset.mode);
+});
+document.getElementById('ctlall').addEventListener('click', e => {
+  const b = e.target.closest('button[data-all]'); if (!b || b.disabled) return;
+  const want = b.dataset.all, names = L.filter(l => (CTL[l.id] || {}).mode === (want === 'standby' ? 'run' : 'standby')).map(l => l.id);
+  if (names.length) sendCtl(names, want);
+});
+
+// ---------------------------------------------------------------- charts
+const LID = (k, agg) => L.map(l => ({ label: l.label, color: l.color, get: r => r[l.id] && r[l.id][k], agg }));
+let CHARTS = [];
+const makeCharts = () => [
+  { g: 'g-freq', t: 'Point cloud rate', d: 'Clouds per second received in ROS (5 s average). Window shows the lowest value.', u: 'Hz', s: LID('pts_hz', 'min'), ref: 10, refl: '10 Hz target', pad: 0.5, dec: 2 },
+  { g: 'g-freq', t: 'Motor speed (measured)', d: 'From the lidar\'s own timestamps, independent of the PC. Lowest value shown.', u: 'rpm', s: LID('rpm_meas', 'min'), ref: 600, refl: '600 rpm', pad: 3, dec: 1 },
+  { g: 'g-freq', t: 'Longest gap between point clouds', d: 'Normal is ~100 ms; over 150 ms means a scan was late or missing. Highest value shown.', u: 'ms', s: LID('pts_gap_ms', 'max'), ref: 150, refl: '150 ms limit', zero: true, dec: 0 },
+  { g: 'g-freq', t: 'IMU rate', d: 'IMU messages per second in ROS (5 s average). Lowest value shown.', u: 'Hz', s: LID('imu_hz', 'min'), ref: 200, refl: '200 Hz', pad: 5, dec: 1 },
+  { g: 'g-power', t: 'Power', d: 'Input voltage × current, from the lidar\'s status packet.', u: 'W', s: LID('power', 'mean'), pad: 0.3, dec: 2 },
+  { g: 'g-power', t: 'Input voltage', d: 'Supply voltage seen by the lidar. A sag here with a motor-speed drop points to power. Lowest value shown.', u: 'V', s: LID('v_main', 'min'), pad: 0.2, dec: 2 },
+  { g: 'g-power', t: 'Current', d: 'Current drawn by the lidar. Highest value shown.', u: 'A', s: LID('i_main', 'max'), pad: 0.05, dec: 2 },
+  { g: 'g-power', t: 'Main board temperature', d: 'Electronics in the base. Warms up for ~20–30 min after power-on.', u: '°C', s: LID('t_main', 'mean'), pad: 1, dec: 1 },
+  { g: 'g-power', t: 'Top board temperature', d: 'Second sensor, near room temperature.', u: '°C', s: LID('t_top', 'mean'), pad: 0.5, dec: 2 },
+  { g: 'g-quality', t: 'Lost packets on the cable', d: 'Point packets missing from the lidar\'s sequence counter, per second. Should stay 0.', u: 'pkts/s', s: LID('msop_lost', 'max'), zero: true, minMax: 1, dec: 0 },
+  { g: 'g-quality', t: 'Points with a return', d: 'Share of the 86,400 points per scan that hit something. Depends on the scene.', u: '%', s: LID('valid_pct', 'mean'), pad: 1, dec: 1 },
+  { g: 'g-quality', t: 'Narrow scans per second', d: 'Scans with fewer than 900 columns (part of the turn missing).', u: 'scans/s', s: LID('short_scans', 'max'), zero: true, minMax: 2, dec: 0 },
+  { g: 'g-quality', t: 'Delay from scan start to ROS', d: 'Includes the 100 ms the scan itself takes.', u: 'ms', s: LID('delay_ms', 'mean'), pad: 5, dec: 0 },
+  { g: 'g-pc', t: 'PC CPU use', d: 'All cores. Highest value shown.', u: '%', s: [{ label: 'CPU', color: '--s1', get: r => r.pc.cpu, agg: 'max' }], zero: true, minMax: 10, dec: 0 },
+  { g: 'g-pc', t: 'Driver CPU use', d: 'All rslidar_sdk_node processes together. 100 % = one full core.', u: '%', s: [{ label: 'rslidar drivers', color: '--s1', get: r => r.pc.driver_cpu, agg: 'max' }], zero: true, minMax: 10, dec: 0 },
+  { g: 'g-pc', t: 'Network traffic in', d: 'Wired port, all lidars together.', u: 'Mbit/s', s: [{ label: 'wired port', color: '--s1', get: r => r.pc.mbps, agg: 'mean' }], zero: true, dec: 1 },
+  { g: 'g-pc', t: 'Packets dropped by the PC', d: 'Should stay 0. Highest value per second shown.', u: 'pkts/s', s: [{ label: 'UDP socket full', color: '--s1', get: r => r.pc.udp_rcvbuf_err, agg: 'max' }, { label: 'Network card overrun', color: '--s2', get: r => r.pc.nic_drop, agg: 'max' }], zero: true, minMax: 1, dec: 0 },
+];
+const charts = [];
+function buildCharts() {
+  for (const c of CHARTS) {
+    const el = document.createElement('div'); el.className = 'card ch';
+    const leg = c.s.length > 1 || c.ref != null ? `<div class="legend">${c.s.map(s => `<span><i style="background:var(${s.color})"></i>${s.label}</span>`).join('')}${c.ref != null ? `<span><i class="dash"></i>${c.refl}</span>` : ''}</div>` : '';
+    el.innerHTML = `<h3>${c.t} <span style="font-weight:400;color:var(--fg3)">(${c.u})</span></h3><div class="chd">${c.d}</div>${leg}<div class="cv"><canvas></canvas></div>`;
+    document.getElementById(c.g).appendChild(el);
+    const cv = el.querySelector('canvas');
+    const obj = { c, cv, hover: null };
+    cv.addEventListener('mousemove', e => { obj.hover = e; draw(obj); });
+    cv.addEventListener('mouseleave', () => { obj.hover = null; document.getElementById('tip').style.display = 'none'; draw(obj); });
+    charts.push(obj);
+  }
+}
+function visibleRows() {
+  if (!ROWS.length) return [];
+  const all = ROWS.filter(r => r.el >= 5);          // first seconds: drivers still starting
+  if (!WIN) return all;
+  if (!all.length) return all;
+  const tEnd = all[all.length - 1].t; let i = all.length - 1;
+  while (i > 0 && all[i - 1].t > tEnd - WIN) i--;
+  return all.slice(i);
+}
+function bucket(rows, s, n) {
+  // -> [{t, v}] with at most n points, aggregated per bucket with s.agg
+  if (rows.length <= n) return rows.map(r => ({ t: r.t, v: s.get(r) ?? null }));
+  const out = [], step = rows.length / n;
+  for (let b = 0; b < n; b++) {
+    const seg = rows.slice(Math.floor(b * step), Math.floor((b + 1) * step));
+    const vals = seg.map(s.get).filter(v => v != null);
+    let v = null;
+    if (vals.length) v = s.agg === 'min' ? Math.min(...vals) : s.agg === 'max' ? Math.max(...vals) : vals.reduce((a, x) => a + x, 0) / vals.length;
+    out.push({ t: seg[seg.length >> 1].t, v });
+  }
+  return out;
+}
+function niceTicks(lo, hi, n) {
+  const span = hi - lo || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw);
+  const t = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) t.push(+v.toFixed(10));
+  return { t, step };
+}
+function draw(o) {
+  const { c, cv } = o, dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight; if (!W) return;
+  if (cv.width !== W * dpr || cv.height !== H * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const rows = visibleRows();
+  const padL = 52, padR = 12, padT = 8, padB = 22, pw = W - padL - padR, ph = H - padT - padB;
+  g.font = '11px system-ui, sans-serif';
+  if (rows.length < 2) { g.fillStyle = css('--fg3'); g.fillText('waiting for data…', padL, padT + ph / 2); return; }
+  const series = c.s.map(s => ({ s, pts: bucket(rows, s, Math.max(50, Math.floor(pw))) }));
+  let vals = series.flatMap(x => x.pts.map(p => p.v)).filter(v => v != null);
+  if (c.ref != null) vals.push(c.ref);
+  let lo = vals.length ? Math.min(...vals) : 0, hi = vals.length ? Math.max(...vals) : 1;
+  if (c.zero) lo = 0;
+  if (c.minMax != null) hi = Math.max(hi, c.minMax);
+  if (c.pad != null) { lo -= c.pad; hi += c.pad; if (c.zero) lo = 0; }
+  if (hi - lo < 1e-9) { hi += 1; lo -= c.zero ? 0 : 1; }
+  const { t: yt } = niceTicks(lo, hi, 4); lo = Math.min(lo, yt[0]); hi = Math.max(hi, yt[yt.length - 1]);
+  const t0 = rows[0].t, t1 = rows[rows.length - 1].t;
+  const X = t => padL + (t - t0) / Math.max(1, t1 - t0) * pw, Y = v => padT + ph - (v - lo) / (hi - lo) * ph;
+  // grid + y labels
+  g.strokeStyle = css('--grid'); g.lineWidth = 1; g.fillStyle = css('--fg2'); g.textAlign = 'right'; g.textBaseline = 'middle';
+  const ydec = Math.max(0, -Math.floor(Math.log10(niceTicks(lo, hi, 4).step)));
+  for (const v of yt) { const y = Math.round(Y(v)) + .5; g.beginPath(); g.moveTo(padL, y); g.lineTo(padL + pw, y); g.stroke(); g.fillText(v.toFixed(ydec), padL - 6, y); }
+  // x axis (elapsed time)
+  g.strokeStyle = css('--axis'); g.beginPath(); g.moveTo(padL, padT + ph + .5); g.lineTo(padL + pw, padT + ph + .5); g.stroke();
+  g.textAlign = 'center'; g.textBaseline = 'top'; g.fillStyle = css('--fg2');
+  const start = META ? META.start : rows[0].t;
+  const xs = [60, 120, 300, 600, 900, 1800, 3600].find(s => (t1 - t0) / s <= 6) || 3600;
+  for (let e = Math.ceil((t0 - start) / xs) * xs; e <= t1 - start; e += xs) { if (e < 0) continue; const x = X(start + e); if (x < padL + 14 || x > padL + pw - 14) continue; g.fillText(fmtT(e), x, padT + ph + 5); }
+  // reference line
+  if (c.ref != null) { const y = Math.round(Y(c.ref)) + .5; g.save(); g.setLineDash([5, 4]); g.strokeStyle = css('--ref'); g.lineWidth = 1.5; g.beginPath(); g.moveTo(padL, y); g.lineTo(padL + pw, y); g.stroke(); g.restore(); }
+  // series
+  g.save(); g.beginPath(); g.rect(padL, padT - 2, pw, ph + 4); g.clip();
+  for (const { s, pts } of series) {
+    g.strokeStyle = css(s.color); g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath(); let pen = false;
+    for (const p of pts) { if (p.v == null) { pen = false; continue; } const x = X(p.t), y = Y(p.v); pen ? g.lineTo(x, y) : g.moveTo(x, y); pen = true; }
+    g.stroke();
+  }
+  g.restore();
+  // hover
+  const tip = document.getElementById('tip');
+  if (o.hover) {
+    const rect = cv.getBoundingClientRect(), mx = o.hover.clientX - rect.left;
+    if (mx >= padL && mx <= padL + pw) {
+      const tt = t0 + (mx - padL) / pw * (t1 - t0);
+      let best = null; for (const r of rows) if (!best || Math.abs(r.t - tt) < Math.abs(best.t - tt)) best = r;
+      const x = X(best.t);
+      g.strokeStyle = css('--fg3'); g.lineWidth = 1; g.beginPath(); g.moveTo(x + .5, padT); g.lineTo(x + .5, padT + ph); g.stroke();
+      for (const s of c.s) { const v = s.get(best); if (v == null) continue; g.fillStyle = css('--panel'); g.beginPath(); g.arc(x, Y(v), 5.5, 0, 7); g.fill(); g.fillStyle = css(s.color); g.beginPath(); g.arc(x, Y(v), 4, 0, 7); g.fill(); }
+      tip.innerHTML = `<div class="m">${fmtT(best.t - start)} · ${clock(best.t)}</div>` + c.s.map(s => `<div><span class="k" style="background:var(${s.color})"></span>${s.label}: <b>${nf(s.get(best), c.dec)}</b> ${c.u}</div>`).join('');
+      tip.style.display = 'block';
+      const tw = tip.offsetWidth; let lx = o.hover.clientX + 14; if (lx + tw > window.innerWidth - 8) lx = o.hover.clientX - tw - 14;
+      tip.style.left = lx + 'px'; tip.style.top = (o.hover.clientY + 12) + 'px';
+    } else tip.style.display = 'none';
+  }
+}
+function drawAll() { for (const o of charts) draw(o); }
+
+// ---------------------------------------------------------------- events + header
+const LN = { pc: 'PC' };
+function addEvents(evs) {
+  if (!evs.length) return;
+  EVENTS.push(...evs);
+  const tb = document.getElementById('ev');
+  tb.innerHTML = EVENTS.slice(-500).reverse().map(e => `<tr><td>${fmtT(e.el)}</td><td>${clock(e.t)}</td><td>${LN[e.lidar] || e.lidar}</td><td><span class="st ${e.level}">${{ ok: '✓', warn: '!', bad: '✕' }[e.level] || ''}</span> ${e.text}</td></tr>`).join('');
+}
+function updateHeader() {
+  if (!META) return;
+  const last = ROWS[ROWS.length - 1], el = last ? last.t - META.start : 0, pc = last ? last.pc : {};
+  const forever = !META.duration;
+  document.getElementById('prog').parentElement.style.display = forever ? 'none' : '';
+  if (!forever) document.getElementById('prog').style.width = Math.min(100, el / META.duration * 100) + '%';
+  const bag = pc.bag_gb != null ? ` · bag ${nf(pc.bag_gb, 1)} GB` : ' · no bag recording';
+  document.getElementById('meta').textContent = `Started ${new Date(META.start * 1000).toLocaleString([], { hour12: false })} · running ${fmtT(el)}` + (forever ? ' · until stopped' : META.finished ? ' · test finished' : ` of ${fmtT(META.duration)} · ${fmtT(META.duration - el)} left`) + bag + ` · disk free ${nf(pc.disk_free_gb, 0)} GB`;
+  for (const l of L) document.getElementById('ip-' + l.id).textContent = l.ip || '';
+}
+function setConn() {
+  const age = (Date.now() / 1000) - lastOk, d = document.getElementById('conndot'), c = document.getElementById('conn');
+  if (META && META.finished) { d.className = 'dot'; c.textContent = 'Test finished, data complete'; }
+  else if (!lastOk) { d.className = 'dot warn'; c.textContent = 'connecting…'; }
+  else if (age < 4) { d.className = 'dot ok'; c.textContent = 'Live, updated ' + Math.max(0, Math.round(age)) + ' s ago'; }
+  else { d.className = 'dot bad'; c.textContent = `Monitor stopped or unreachable (${fmtT(age)} ago), showing data received so far`; }
+}
+
+// ---------------------------------------------------------------- loop
+async function poll() {
+  try {
+    const r = await fetch(`/data?from=${ROWS.length}&efrom=${EVENTS.length}`, { cache: 'no-store' });
+    const j = await r.json();
+    if (META && j.meta.start !== META.start) { location.reload(); return; }   // a new run started
+    if (META && j.total < ROWS.length) { location.reload(); return; }        // continuation run took over
+    if (!META) init(j.meta);
+    META = j.meta; ROWS.push(...j.rows); addEvents(j.events); lastOk = Date.now() / 1000;
+    CTL = j.ctl || null; serverNow = j.now;
+    if (j.rows.length) { updateTiles(); drawAll(); } else updateCtl();
+    updateHeader();
+  } catch (e) { /* monitor not reachable: keep what we have */ }
+  setConn();
+  setTimeout(poll, 1000);
+}
+document.getElementById('win').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  WIN = +b.dataset.w;
+  for (const x of document.querySelectorAll('#win button')) x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+  drawAll();
+});
+window.addEventListener('resize', drawAll);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
+function init(meta) {
+  L = meta.lidars.slice(0, 4).map((l, i) => ({ id: l.name, label: l.name, ip: l.ip, color: COLORS[i] }));
+  for (const l of L) LN[l.id] = l.label;
+  document.getElementById('title').textContent = `Airy live monitor: ${L.length} lidar${L.length === 1 ? '' : 's'}`;
+  CHARTS = makeCharts();
+  buildLidars(); buildCharts();
+}
+poll();
+</script>
+</body>
+</html>

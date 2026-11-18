@@ -68,7 +68,13 @@ if [ -z "$ROS_DISTRO" ]; then
   done
 fi
 [ -n "$WS" ] && source "$WS/install/setup.bash"
-command -v ros2 >/dev/null || die "ROS 2 not found: source it first"
+NOROS=()
+if ! command -v ros2 >/dev/null; then
+  [ "$MODE" = standalone ] && die "ROS 2 not found: standalone mode needs it (source it first)"
+  [ "$BAGREC" = 1 ] && die "ROS 2 not found: --bag needs it (source it first)"
+  echo -e "${YEL}ROS 2 not found: monitoring the cable and PC only (no point cloud / IMU topic values)${NC}"
+  NOROS=(--no-ros)
+fi
 
 # ---- lidar list -> JSON (topics default to /<name>/points and /<name>/imu, as multi_rslidar)
 STAMP=$(date +%Y%m%d_%H%M%S)
@@ -105,7 +111,7 @@ if [ "$MODE" = standalone ]; then
   [ -n "$WS" ] || die "--mode standalone needs --ws <workspace with rslidar_sdk>"
   pgrep -x rslidar_sdk_nod >/dev/null && die "an rslidar_sdk_node already runs - use --mode attach, or stop it"
 elif [ "$MODE" = attach ]; then
-  pgrep -x rslidar_sdk_nod >/dev/null || echo -e "${YEL}no rslidar_sdk_node running: ROS values stay empty until the robot's lidar driver starts${NC}"
+  if [ ${#NOROS[@]} = 0 ] && ! pgrep -x rslidar_sdk_nod >/dev/null; then echo -e "${YEL}no rslidar_sdk_node running: ROS values stay empty until the robot's lidar driver starts${NC}"; fi
 else die "--mode must be attach or standalone"; fi
 if [ "$BAGREC" = 1 ]; then
   FREE_GB=$(( $(df --output=avail -k "$OUT" | tail -1) / 1024 / 1024 ))
@@ -180,7 +186,7 @@ fi
 # ---- 3. monitor + dashboard
 EXTRA=(); [ "$BAGREC" = 1 ] && EXTRA+=(--bag "$BAG"); [ -n "$CONT" ] && EXTRA+=(--continue "$CONT")
 python3 "$HERE/live_monitor.py" --lidars "$RUN/lidars.json" --run "$RUN" --duration "$SECS" \
-  --port "$PORT" --iface "$IFACE" "${EXTRA[@]}" > "$RUN/monitor.log" 2>&1 &
+  --port "$PORT" --iface "$IFACE" "${NOROS[@]}" "${EXTRA[@]}" > "$RUN/monitor.log" 2>&1 &
 MON=$!; PIDS+=($MON)
 sleep 4
 kill -0 "$MON" 2>/dev/null || { echo -e "${RED}monitor failed:${NC}"; tail -20 "$RUN/monitor.log"; exit 1; }

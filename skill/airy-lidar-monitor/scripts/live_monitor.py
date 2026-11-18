@@ -17,10 +17,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 import numpy as np
-import rclpy
-from rclpy.node import Node
-from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
-from sensor_msgs.msg import Imu, PointCloud2
+try:                               # ROS is optional: without it only the wire + PC layers are shown
+    import rclpy
+    from rclpy.node import Node
+    from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+    from sensor_msgs.msg import Imu, PointCloud2
+    HAVE_ROS = True
+except ImportError:
+    HAVE_ROS = False
+    Node = object
 
 FULL_COLS = 900                    # Airy: 900 columns x 96 rings per turn at 10 Hz
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +38,9 @@ ap.add_argument('--bag', default='')
 ap.add_argument('--port', type=int, default=8090)
 ap.add_argument('--iface', default='enp2s0')
 ap.add_argument('--continue', dest='cont', default='', help='previous run dir: keep its timeline')
+ap.add_argument('--no-ros', action='store_true', help='wire + PC layers only (no ROS subscriber)')
 args, ros_args = ap.parse_known_args()
+USE_ROS = HAVE_ROS and not args.no_ros
 LIDARS = json.load(open(args.lidars))
 NAMES = [l['name'] for l in LIDARS]
 
@@ -49,7 +56,7 @@ if args.cont:                     # continue the timeline of a previous run (dur
             pass
 META = dict(start=START, duration=args.duration, run=args.run, bag=args.bag,
             lidars=[dict(name=l['name'], ip=l.get('ip', '')) for l in LIDARS],
-            finished=False, continues=args.cont or None)
+            finished=False, continues=args.cont or None, ros=USE_ROS)
 
 
 # ---------------------------------------------------------------- ROS side
@@ -132,6 +139,19 @@ class RosSide(Node):
             s = self.s[n]
             s.imu.append((time.time(), sec + nsec * 1e-9))
             s.imu_total += 1
+
+
+class NoRos:
+    """Stand-in for RosSide when ROS is not available: every ROS value stays empty."""
+    def __init__(self):
+        self.s = {n: Stats() for n in NAMES}
+
+
+STOP = threading.Event()
+
+
+def running():
+    return rclpy.ok() if USE_ROS else not STOP.is_set()
 
 
 # ---------------------------------------------------------------- PC side
@@ -222,7 +242,7 @@ def sampler(node):
     active = {}                          # (lidar, kind) -> True while an event is ongoing
     base_v = {}
     nxt = int(time.time()) + 1
-    while rclpy.ok():
+    while running():
         time.sleep(max(0, nxt - time.time()))
         t = nxt
         nxt += 1
@@ -309,7 +329,7 @@ def sampler(node):
             if r.get('v_main') and n not in base_v and el > 20:
                 base_v[n] = r['v_main']
             checks = {
-                'no_points': (r['pts_n'] == 0 and el > 10, 'no point clouds in ROS', 'bad'),
+                'no_points': (USE_ROS and r['pts_n'] == 0 and el > 10, 'no point clouds in ROS', 'bad'),
                 'hz': (el > 10 and r['pts_n'] > 0 and abs(r['pts_hz'] - 10) > 0.3,
                        f"point cloud rate {r['pts_hz']} Hz", 'warn'),
                 'gap': (el > 10 and r['pts_gap_ms'] is not None and r['pts_gap_ms'] > 150,
@@ -390,8 +410,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    rclpy.init(args=ros_args)
-    node = RosSide()
+    if USE_ROS:
+        rclpy.init(args=ros_args)
+        node = RosSide()
+    else:
+        node = NoRos()
+        print('ROS not available (or --no-ros): wire + PC layers only', flush=True)
     srv = ThreadingHTTPServer(('127.0.0.1', args.port), Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     threading.Thread(target=sampler, args=(node,), daemon=True).start()
@@ -399,9 +423,18 @@ def main():
         json.dump(META, f)
     print(f'dashboard: http://127.0.0.1:{args.port}/', flush=True)
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+        if USE_ROS:
+            rclpy.spin(node)
+        else:
+            import signal
+            signal.signal(signal.SIGTERM, lambda *a: STOP.set())
+            while not STOP.wait(1):
+                pass
+    except KeyboardInterrupt:
         pass
+    except Exception as e:
+        if not (USE_ROS and isinstance(e, rclpy.executors.ExternalShutdownException)):
+            raise
     finally:
         with open(os.path.join(args.run, 'events.json'), 'w') as f:
             json.dump(EVENTS, f, indent=1)
